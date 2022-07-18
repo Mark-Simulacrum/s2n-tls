@@ -214,6 +214,12 @@ mod tests {
     }
 
     #[test]
+    fn handshake_default_min_tls13() {
+        let config = build_config(&security::DEFAULT_MIN_TLS13).unwrap();
+        s2n_tls_pair(config)
+    }
+
+    #[test]
     fn default_config_and_clone_interaction() -> Result<(), Error> {
         let config = build_config(&security::DEFAULT_TLS13)?;
         assert_eq!(config.test_get_refcount()?, 1);

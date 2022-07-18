@@ -500,6 +500,7 @@ int main(int argc, char **argv)
 
         char tls13_security_policy_strings[][255] = {
             "default_tls13",
+            "default_min_tls13",
             "test_all",
             "test_all_tls13",
             "20190801",

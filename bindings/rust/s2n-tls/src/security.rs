@@ -46,6 +46,7 @@ macro_rules! policy {
 
 policy!(DEFAULT, "default");
 policy!(DEFAULT_TLS13, "default_tls13");
+policy!(DEFAULT_MIN_TLS13, "default_min_tls13");
 
 #[cfg(feature = "pq")]
 policy!(TESTING_PQ, "PQ-TLS-1-0-2021-05-26");
@@ -53,6 +54,7 @@ policy!(TESTING_PQ, "PQ-TLS-1-0-2021-05-26");
 pub const ALL_POLICIES: &[Policy] = &[
     DEFAULT,
     DEFAULT_TLS13,
+    DEFAULT_ONLY_TLS13,
     #[cfg(feature = "pq")]
     TESTING_PQ,
 ];

@@ -260,6 +260,28 @@ const struct s2n_signature_scheme* const s2n_sig_scheme_pref_list_20200207[] = {
         &s2n_ecdsa_sha1,
 };
 
+/* s2n_sig_scheme_pref_list_20200207, but without support for TLS 1.2 or legacy SHA-1. */
+const struct s2n_signature_scheme* const s2n_sig_scheme_pref_list_default_min_tls13[] = {
+        /* RSA PSS */
+        &s2n_rsa_pss_pss_sha256,
+        &s2n_rsa_pss_pss_sha384,
+        &s2n_rsa_pss_pss_sha512,
+        &s2n_rsa_pss_rsae_sha256,
+        &s2n_rsa_pss_rsae_sha384,
+        &s2n_rsa_pss_rsae_sha512,
+
+        /* RSA PKCS1 */
+        &s2n_rsa_pkcs1_sha256,
+        &s2n_rsa_pkcs1_sha384,
+        &s2n_rsa_pkcs1_sha512,
+        &s2n_rsa_pkcs1_sha224,
+};
+
+const struct s2n_signature_preferences s2n_signature_preferences_default_min_tls13 = {
+        .count = s2n_array_len(s2n_sig_scheme_pref_list_default_min_tls13),
+        .signature_schemes = s2n_sig_scheme_pref_list_default_min_tls13,
+};
+
 /*
  * These signature schemes were chosen based on the following specification:
  * https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf

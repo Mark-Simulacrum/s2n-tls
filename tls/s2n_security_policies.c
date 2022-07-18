@@ -37,6 +37,19 @@ const struct s2n_security_policy security_policy_default_tls13 = {
 };
 
 /*
+ * This security policy is intended to mirror default_tls13, except setting a
+ * minimum protocol version of TLS 1.3, which lets us restrict a number of the options.
+ */
+const struct s2n_security_policy security_policy_default_min_tls13 = {
+    .minimum_protocol_version = S2N_TLS13,
+    .cipher_preferences = &cipher_preferences_20210831,
+    .kem_preferences = &kem_preferences_null,
+    .signature_preferences = &s2n_signature_preferences_default_min_tls13,
+    .certificate_signature_preferences = &s2n_certificate_signature_preferences_20201110,
+    .ecc_preferences = &s2n_ecc_preferences_20200310,
+};
+
+/*
  * This security policy is derived from the following specification:
  * https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-52r2.pdf
  *
@@ -749,6 +762,7 @@ const struct s2n_security_policy security_policy_null = {
 struct s2n_security_policy_selection security_policy_selection[] = {
     { .version="default", .security_policy=&security_policy_20170210, .ecc_extension_required=0, .pq_kem_extension_required=0 },
     { .version="default_tls13", .security_policy=&security_policy_default_tls13, .ecc_extension_required=0, .pq_kem_extension_required=0 },
+    { .version="default_min_tls13", .security_policy=&security_policy_default_min_tls13, .ecc_extension_required=0, .pq_kem_extension_required=0 },
     { .version="default_fips", .security_policy=&security_policy_default_fips, .ecc_extension_required=0, .pq_kem_extension_required=0 },
     { .version="ELBSecurityPolicy-TLS-1-0-2015-04", .security_policy=&security_policy_elb_2015_04, .ecc_extension_required=0, .pq_kem_extension_required=0 },
     /* Not a mistake. TLS-1-0-2015-05 and 2016-08 are equivalent */
