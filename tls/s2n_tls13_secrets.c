@@ -520,6 +520,28 @@ S2N_RESULT s2n_derive_resumption_master_secret(struct s2n_connection *conn)
     return S2N_RESULT_OK;
 }
 
+/**
+ *= https://tools.ietf.org/rfc/rfc8446#section-7.1
+ *#           |
+ *#           +-----> Derive-Secret(., "exp master",
+ *#           |                     ClientHello...server Finished)
+ *#           |                     = exporter_master_secret
+ */
+S2N_RESULT s2n_derive_exporter_master_secret(struct s2n_connection *conn)
+{
+    RESULT_ENSURE_REF(conn);
+    /* Secret derivation requires these fields to be non-null.  */
+    RESULT_ENSURE_REF(conn->secure);
+    RESULT_ENSURE_REF(conn->secure->cipher_suite);
+
+    RESULT_GUARD(s2n_derive_secret_with_context(conn,
+            S2N_MASTER_SECRET,
+            &s2n_tls13_label_exporter_master_secret,
+            SERVER_FINISHED,
+            &CONN_SECRET(conn, exporter_master_secret)));
+    return S2N_RESULT_OK;
+}
+
 static s2n_result (*extract_methods[])(struct s2n_connection *conn) = {
     [S2N_EARLY_SECRET] = &s2n_extract_early_secret_for_schedule,
     [S2N_HANDSHAKE_SECRET] = &s2n_extract_handshake_secret,
@@ -636,6 +658,7 @@ S2N_RESULT s2n_tls13_secrets_update(struct s2n_connection *conn)
                     S2N_CLIENT, &CONN_SECRET(conn, client_app_secret)));
             RESULT_GUARD(s2n_tls13_derive_secret(conn, S2N_MASTER_SECRET,
                     S2N_SERVER, &CONN_SECRET(conn, server_app_secret)));
+            RESULT_GUARD(s2n_derive_exporter_master_secret(conn));
             break;
         case CLIENT_FINISHED:
             RESULT_GUARD(s2n_calculate_transcript_digest(conn));
@@ -670,4 +693,54 @@ S2N_RESULT s2n_tls13_secrets_get(struct s2n_connection *conn, s2n_extract_secret
     RESULT_CHECKED_MEMCPY(secret->data, secrets[secret_type][mode], secret->size);
     RESULT_ENSURE_GT(secret->size, 0);
     return S2N_RESULT_OK;
+}
+
+int s2n_connection_tls_exporter(
+        struct s2n_connection *conn,
+        uint8_t *output_,
+        uint32_t output_length,
+        const uint8_t *label_,
+        uint32_t label_length,
+        const uint8_t *context,
+        uint32_t context_length)
+{
+    POSIX_ENSURE_REF(conn);
+    POSIX_ENSURE_REF(output_);
+    POSIX_ENSURE_REF(label_);
+    POSIX_ENSURE_REF(context);
+    POSIX_ENSURE(s2n_connection_get_protocol_version(conn) == S2N_TLS13, S2N_ERR_INVALID_STATE);
+
+    s2n_hmac_algorithm hmac_alg = conn->secure->cipher_suite->prf_alg;
+
+    uint8_t size = 0;
+    if (s2n_hmac_digest_size(hmac_alg, &size) != S2N_SUCCESS) {
+        size = 0;
+    }
+    POSIX_ENSURE_GT(size, 0);
+    struct s2n_blob exporter_master_secret = (struct s2n_blob){ .data = conn->secrets.version.tls13.exporter_master_secret, .size = size };
+    const struct s2n_blob label = (struct s2n_blob){ .data = (uint8_t *) label_, .size = label_length };
+
+    uint8_t derived_secret_bytes[S2N_TLS13_SECRET_MAX_LEN] = { 0 };
+    struct s2n_blob derived_secret = { 0 };
+    POSIX_GUARD(s2n_blob_init(&derived_secret, derived_secret_bytes, S2N_TLS13_SECRET_MAX_LEN));
+    POSIX_GUARD_RESULT(s2n_derive_secret(hmac_alg, &exporter_master_secret, &label, &CONN_HASH(conn, transcript_hash_digest), &derived_secret));
+
+    DEFER_CLEANUP(struct s2n_hmac_state hmac_state = { 0 }, s2n_hmac_free);
+    POSIX_GUARD(s2n_hmac_new(&hmac_state));
+
+    DEFER_CLEANUP(struct s2n_hash_state hash = { 0 }, s2n_hash_free);
+    POSIX_GUARD(s2n_hash_new(&hash));
+
+    s2n_hash_algorithm hash_alg;
+    POSIX_GUARD(s2n_hmac_hash_alg(hmac_alg, &hash_alg));
+    struct s2n_blob digest = EMPTY_CONTEXT(hmac_alg);
+
+    POSIX_GUARD(s2n_hash_init(&hash, hash_alg));
+    POSIX_GUARD(s2n_hash_digest(&hash, digest.data, digest.size));
+
+    struct s2n_blob output = (struct s2n_blob){ .data = output_, .size = output_length };
+    POSIX_GUARD(s2n_hkdf_expand_label(&hmac_state, hmac_alg,
+            &derived_secret, &s2n_tls13_label_exporter, &digest, &output));
+
+    return 0;
 }

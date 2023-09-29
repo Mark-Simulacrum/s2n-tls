@@ -281,6 +281,7 @@ int main(int argc, char **argv)
             EXPECT_MEMCPY_SUCCESS(conn->secrets.version.tls13.server_handshake_secret, test_secret.data, test_secret.size);
             EXPECT_MEMCPY_SUCCESS(conn->secrets.version.tls13.client_app_secret, test_secret.data, test_secret.size);
             EXPECT_MEMCPY_SUCCESS(conn->secrets.version.tls13.server_app_secret, test_secret.data, test_secret.size);
+            EXPECT_MEMCPY_SUCCESS(conn->secrets.version.tls13.exporter_master_secret, test_secret.data, test_secret.size);
             EXPECT_MEMCPY_SUCCESS(conn->secrets.version.tls13.resumption_master_secret, test_secret.data, test_secret.size);
 
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.extract_secret, empty_secret, sizeof(empty_secret));
@@ -289,6 +290,7 @@ int main(int argc, char **argv)
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.server_handshake_secret, empty_secret, sizeof(empty_secret));
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.client_app_secret, empty_secret, sizeof(empty_secret));
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.server_app_secret, empty_secret, sizeof(empty_secret));
+            EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.exporter_master_secret, empty_secret, sizeof(empty_secret));
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.resumption_master_secret, empty_secret, sizeof(empty_secret));
 
             EXPECT_OK(s2n_tls13_secrets_clean(conn));
@@ -299,6 +301,7 @@ int main(int argc, char **argv)
             EXPECT_BYTEARRAY_EQUAL(conn->secrets.version.tls13.server_handshake_secret, empty_secret, sizeof(empty_secret));
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.client_app_secret, empty_secret, sizeof(empty_secret));
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.server_app_secret, empty_secret, sizeof(empty_secret));
+            EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.exporter_master_secret, empty_secret, sizeof(empty_secret));
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.resumption_master_secret, empty_secret, sizeof(empty_secret));
         };
     };
@@ -485,6 +488,42 @@ int main(int argc, char **argv)
 
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.resumption_master_secret,
                     empty_secret, sizeof(empty_secret));
+        };
+    };
+
+    /* s2n_connection_export_secret */
+    {
+        /* Derives exporter secret on SERVER_FINISHED */
+        {
+            DEFER_CLEANUP(struct s2n_connection *conn = s2n_connection_new(S2N_SERVER),
+                    s2n_connection_ptr_free);
+            conn->secure->cipher_suite = &s2n_tls13_aes_128_gcm_sha256;
+            conn->actual_protocol_version = S2N_TLS13;
+            EXPECT_OK(s2n_connection_set_test_master_secret(conn, &test_secret));
+            EXPECT_BYTEARRAY_EQUAL(conn->secrets.version.tls13.resumption_master_secret,
+                    empty_secret, sizeof(empty_secret));
+
+            while (s2n_conn_get_current_message_type(conn) != SERVER_FINISHED) {
+                conn->handshake.message_number++;
+            }
+            EXPECT_OK(s2n_tls13_secrets_update(conn));
+
+            EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.exporter_master_secret,
+                    empty_secret, sizeof(empty_secret));
+
+            uint8_t output[32];
+            ssize_t result = s2n_connection_tls_exporter(
+                    conn,
+                    output,
+                    sizeof(output),
+                    (uint8_t *) "label",
+                    sizeof("label"),
+                    (uint8_t *) "context",
+                    sizeof("context"));
+            EXPECT_SUCCESS(result);
+            S2N_BLOB_FROM_HEX(expected, "e8 39 08 03 29 9f 40 c5 51 04 46 74 ff \
+                    37 42 2f 3a 0c e5 8c 45 f3 87 99 f3 e1 29 5c ce 6f f8 ca");
+            EXPECT_BYTEARRAY_EQUAL(output, expected.data, expected.size);
         };
     };
 
