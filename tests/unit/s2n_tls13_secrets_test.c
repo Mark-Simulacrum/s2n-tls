@@ -500,7 +500,7 @@ int main(int argc, char **argv)
             conn->secure->cipher_suite = &s2n_tls13_aes_128_gcm_sha256;
             conn->actual_protocol_version = S2N_TLS13;
             EXPECT_OK(s2n_connection_set_test_master_secret(conn, &test_secret));
-            EXPECT_BYTEARRAY_EQUAL(conn->secrets.version.tls13.resumption_master_secret,
+            EXPECT_BYTEARRAY_EQUAL(conn->secrets.version.tls13.exporter_master_secret,
                     empty_secret, sizeof(empty_secret));
 
             while (s2n_conn_get_current_message_type(conn) != SERVER_FINISHED) {
