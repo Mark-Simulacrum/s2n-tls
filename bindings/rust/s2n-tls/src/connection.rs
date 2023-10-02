@@ -819,12 +819,12 @@ impl Connection {
         unsafe {
             s2n_connection_tls_exporter(
                 self.connection.as_ptr(),
-                output.as_mut_ptr(),
-                output.len().try_into().map_err(|_| Error::INVALID_INPUT)?,
                 label.as_ptr(),
                 label.len().try_into().map_err(|_| Error::INVALID_INPUT)?,
                 context.as_ptr(),
                 context.len().try_into().map_err(|_| Error::INVALID_INPUT)?,
+                output.as_mut_ptr(),
+                output.len().try_into().map_err(|_| Error::INVALID_INPUT)?,
             )
             .into_result()
             .map(|_| ())

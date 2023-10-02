@@ -2880,8 +2880,9 @@ S2N_API extern const char *s2n_connection_get_cipher(struct s2n_connection *conn
  * @param conn A pointer to the connection
  * @returns A POSIX error signal. If an error was returned, the value contained in `output` should be considered invalid.
  */
-S2N_API extern int s2n_connection_tls_exporter(struct s2n_connection *conn, uint8_t *output, uint32_t output_length,
-        const uint8_t *label, uint32_t label_length, const uint8_t *context, uint32_t context_length);
+S2N_API extern int s2n_connection_tls_exporter(struct s2n_connection *conn,
+        const uint8_t *label, uint32_t label_length, const uint8_t *context, uint32_t context_length,
+        uint8_t *output, uint32_t output_length);
 
 /**
  * Returns the IANA value for the connection's negotiated cipher suite.

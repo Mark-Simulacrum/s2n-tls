@@ -703,15 +703,10 @@ S2N_RESULT s2n_tls13_secrets_get(struct s2n_connection *conn, s2n_extract_secret
     return S2N_RESULT_OK;
 }
 
-int s2n_connection_tls_exporter(
-        struct s2n_connection *conn,
-        uint8_t *output_in,
-        uint32_t output_length,
-        const uint8_t *label_in,
-        uint32_t label_length,
-        const uint8_t *context,
-        uint32_t context_length)
-{
+int s2n_connection_tls_exporter(struct s2n_connection *conn,
+        const uint8_t *label_in, uint32_t label_length,
+        const uint8_t *context, uint32_t context_length,
+        uint8_t *output_in, uint32_t output_length) {
     POSIX_ENSURE_REF(conn);
     POSIX_ENSURE_REF(output_in);
     POSIX_ENSURE_REF(label_in);
