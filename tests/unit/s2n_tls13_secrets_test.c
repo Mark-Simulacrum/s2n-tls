@@ -511,8 +511,15 @@ int main(int argc, char **argv)
             EXPECT_BYTEARRAY_NOT_EQUAL(conn->secrets.version.tls13.exporter_master_secret,
                     empty_secret, sizeof(empty_secret));
 
-            uint8_t output[32];
-            ssize_t result = s2n_connection_tls_exporter(
+            // s2n_connection_tls_exporter requires us to finish the handshake.
+            // The above is needed since s2n_tls13_secrets_update will only
+            // initialize when it sees the SERVER_FINISHED frame.
+            while (s2n_conn_get_current_message_type(conn) != APPLICATION_DATA) {
+                conn->handshake.message_number++;
+            }
+
+            uint8_t output[32] = { 0 };
+            int result = s2n_connection_tls_exporter(
                     conn,
                     output,
                     sizeof(output),
