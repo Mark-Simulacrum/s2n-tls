@@ -720,8 +720,11 @@ int s2n_connection_tls_exporter(struct s2n_connection *conn,
     POSIX_ENSURE_REF(conn->secure->cipher_suite);
     s2n_hmac_algorithm hmac_alg = conn->secure->cipher_suite->prf_alg;
 
+    uint8_t label_bytes[249] = { 0 };
     struct s2n_blob label = { 0 };
-    POSIX_GUARD(s2n_blob_init(&label, (uint8_t *) label_in, label_length));
+    POSIX_ENSURE_LTE(label_length, sizeof(label_bytes));
+    POSIX_CHECKED_MEMCPY(label_bytes, label_in, label_length);
+    POSIX_GUARD(s2n_blob_init(&label, label_bytes, label_length));
 
     uint8_t derived_secret_bytes[S2N_TLS13_SECRET_MAX_LEN] = { 0 };
     struct s2n_blob derived_secret = { 0 };
@@ -738,7 +741,9 @@ int s2n_connection_tls_exporter(struct s2n_connection *conn,
 
     s2n_hash_algorithm hash_alg = { 0 };
     POSIX_GUARD(s2n_hmac_hash_alg(hmac_alg, &hash_alg));
-    struct s2n_blob digest = EMPTY_CONTEXT(hmac_alg);
+    uint8_t digest_bytes[S2N_MAX_DIGEST_LEN] = { 0 };
+    struct s2n_blob digest = { 0 };
+    POSIX_GUARD(s2n_blob_init(&digest, digest_bytes, s2n_get_hash_len(CONN_HMAC_ALG(conn))));
 
     POSIX_GUARD(s2n_hash_init(&hash, hash_alg));
     POSIX_GUARD(s2n_hash_update(&hash, context, context_length));
