@@ -710,6 +710,9 @@ int s2n_connection_tls_exporter(
     POSIX_ENSURE_REF(context);
     POSIX_ENSURE(s2n_connection_get_protocol_version(conn) == S2N_TLS13, S2N_ERR_INVALID_STATE);
 
+    POSIX_ENSURE(is_handshake_complete(conn), S2N_ERR_HANDSHAKE_NOT_COMPLETE);
+    POSIX_ENSURE_REF(conn->secure);
+    POSIX_ENSURE_REF(conn->secure->cipher_suite);
     s2n_hmac_algorithm hmac_alg = conn->secure->cipher_suite->prf_alg;
 
     uint8_t size = 0;
