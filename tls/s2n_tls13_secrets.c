@@ -659,14 +659,14 @@ S2N_RESULT s2n_tls13_secrets_update(struct s2n_connection *conn)
             RESULT_GUARD(s2n_tls13_derive_secret(conn, S2N_MASTER_SECRET,
                     S2N_SERVER, &CONN_SECRET(conn, server_app_secret)));
             RESULT_GUARD(s2n_derive_exporter_master_secret(conn,
-                        &CONN_SECRET(conn, exporter_master_secret)));
+                    &CONN_SECRET(conn, exporter_master_secret)));
 
             if (conn->secret_cb && (s2n_connection_is_quic_enabled(conn) || s2n_in_unit_test())) {
                 RESULT_GUARD_POSIX(conn->secret_cb(conn->secret_cb_context, conn, S2N_EXPORTER_SECRET,
-                            CONN_SECRET(conn, exporter_master_secret).data, CONN_SECRET(conn, exporter_master_secret).size));
+                        CONN_SECRET(conn, exporter_master_secret).data, CONN_SECRET(conn, exporter_master_secret).size));
             }
             s2n_result_ignore(s2n_key_log_tls13_secret(conn, &CONN_SECRET(conn, exporter_master_secret), S2N_EXPORTER_SECRET));
-    return S2N_RESULT_OK;
+            return S2N_RESULT_OK;
             break;
         case CLIENT_FINISHED:
             RESULT_GUARD(s2n_calculate_transcript_digest(conn));
@@ -706,7 +706,8 @@ S2N_RESULT s2n_tls13_secrets_get(struct s2n_connection *conn, s2n_extract_secret
 int s2n_connection_tls_exporter(struct s2n_connection *conn,
         const uint8_t *label_in, uint32_t label_length,
         const uint8_t *context, uint32_t context_length,
-        uint8_t *output_in, uint32_t output_length) {
+        uint8_t *output_in, uint32_t output_length)
+{
     POSIX_ENSURE_REF(conn);
     POSIX_ENSURE_REF(output_in);
     POSIX_ENSURE_REF(label_in);
@@ -724,7 +725,7 @@ int s2n_connection_tls_exporter(struct s2n_connection *conn,
     uint8_t derived_secret_bytes[S2N_TLS13_SECRET_MAX_LEN] = { 0 };
     struct s2n_blob derived_secret = { 0 };
     POSIX_GUARD(s2n_blob_init(&derived_secret, derived_secret_bytes,
-                s2n_get_hash_len(CONN_HMAC_ALG(conn))));
+            s2n_get_hash_len(CONN_HMAC_ALG(conn))));
     POSIX_GUARD_RESULT(s2n_derive_secret(hmac_alg, &CONN_SECRET(conn, exporter_master_secret),
             &label, &EMPTY_CONTEXT(hmac_alg), &derived_secret));
 

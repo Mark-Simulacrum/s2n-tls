@@ -504,11 +504,11 @@ int main(int argc, char **argv)
             /**
              *= https://www.rfc-editor.org/rfc/rfc8448.html#section-3
              *= type=test
-             *#    {server}  derive secret "tls13 exp master" (same as client)
+             *#    {client}  derive secret "tls13 exp master" (same as server)
              *
              *= https://www.rfc-editor.org/rfc/rfc8448.html#section-3
              *= type=test
-             *#    {client}  derive secret "tls13 exp master":
+             *#    {server}  derive secret "tls13 exp master":
              *#
              *#       PRK (32 octets):  18 df 06 84 3d 13 a0 8b f2 a4 49 84 4c 5f 8a 47
              *#          80 01 bc 4d 4c 62 79 84 d5 a4 1d a8 d0 40 29 19
