@@ -527,7 +527,7 @@ S2N_RESULT s2n_derive_resumption_master_secret(struct s2n_connection *conn)
  *#           |                     ClientHello...server Finished)
  *#           |                     = exporter_master_secret
  */
-S2N_RESULT s2n_derive_exporter_master_secret(struct s2n_connection *conn)
+S2N_RESULT s2n_derive_exporter_master_secret(struct s2n_connection *conn, struct s2n_blob *secret)
 {
     RESULT_ENSURE_REF(conn);
     /* Secret derivation requires these fields to be non-null.  */
@@ -538,7 +538,7 @@ S2N_RESULT s2n_derive_exporter_master_secret(struct s2n_connection *conn)
             S2N_MASTER_SECRET,
             &s2n_tls13_label_exporter_master_secret,
             SERVER_FINISHED,
-            &CONN_SECRET(conn, exporter_master_secret)));
+            secret));
     return S2N_RESULT_OK;
 }
 
@@ -658,7 +658,15 @@ S2N_RESULT s2n_tls13_secrets_update(struct s2n_connection *conn)
                     S2N_CLIENT, &CONN_SECRET(conn, client_app_secret)));
             RESULT_GUARD(s2n_tls13_derive_secret(conn, S2N_MASTER_SECRET,
                     S2N_SERVER, &CONN_SECRET(conn, server_app_secret)));
-            RESULT_GUARD(s2n_derive_exporter_master_secret(conn));
+            RESULT_GUARD(s2n_derive_exporter_master_secret(conn,
+                        &CONN_SECRET(conn, exporter_master_secret)));
+
+            if (conn->secret_cb && (s2n_connection_is_quic_enabled(conn) || s2n_in_unit_test())) {
+                RESULT_GUARD_POSIX(conn->secret_cb(conn->secret_cb_context, conn, S2N_EXPORTER_SECRET,
+                            CONN_SECRET(conn, exporter_master_secret).data, CONN_SECRET(conn, exporter_master_secret).size));
+            }
+            s2n_result_ignore(s2n_key_log_tls13_secret(conn, &CONN_SECRET(conn, exporter_master_secret), S2N_EXPORTER_SECRET));
+    return S2N_RESULT_OK;
             break;
         case CLIENT_FINISHED:
             RESULT_GUARD(s2n_calculate_transcript_digest(conn));
@@ -720,9 +728,10 @@ int s2n_connection_tls_exporter(
 
     uint8_t derived_secret_bytes[S2N_TLS13_SECRET_MAX_LEN] = { 0 };
     struct s2n_blob derived_secret = { 0 };
-    POSIX_GUARD(s2n_blob_init(&derived_secret, derived_secret_bytes, S2N_TLS13_SECRET_MAX_LEN));
+    POSIX_GUARD(s2n_blob_init(&derived_secret, derived_secret_bytes,
+                s2n_get_hash_len(CONN_HMAC_ALG(conn))));
     POSIX_GUARD_RESULT(s2n_derive_secret(hmac_alg, &CONN_SECRET(conn, exporter_master_secret),
-            &label, &CONN_HASH(conn, transcript_hash_digest), &derived_secret));
+            &label, &EMPTY_CONTEXT(hmac_alg), &derived_secret));
 
     DEFER_CLEANUP(struct s2n_hmac_state hmac_state = { 0 }, s2n_hmac_free);
     POSIX_GUARD(s2n_hmac_new(&hmac_state));
@@ -735,6 +744,7 @@ int s2n_connection_tls_exporter(
     struct s2n_blob digest = EMPTY_CONTEXT(hmac_alg);
 
     POSIX_GUARD(s2n_hash_init(&hash, hash_alg));
+    POSIX_GUARD(s2n_hash_update(&hash, context, context_length));
     POSIX_GUARD(s2n_hash_digest(&hash, digest.data, digest.size));
 
     struct s2n_blob output = { 0 };

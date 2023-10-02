@@ -528,8 +528,9 @@ int main(int argc, char **argv)
                     (uint8_t *) "context",
                     sizeof("context"));
             EXPECT_SUCCESS(result);
-            S2N_BLOB_FROM_HEX(expected, "e8 39 08 03 29 9f 40 c5 51 04 46 74 ff \
-                    37 42 2f 3a 0c e5 8c 45 f3 87 99 f3 e1 29 5c ce 6f f8 ca");
+            S2N_BLOB_FROM_HEX(expected, "57 93 3f 4a 3c 4c 7b b6 1c 84 51 02 \
+                    f5 87 30 28 f2 9e e6 38 06 38 2a a3 1d 6a d8 e3 36 87 cb 84");
+            EXPECT_EQUAL(32, expected.size);
             EXPECT_BYTEARRAY_EQUAL(output, expected.data, expected.size);
         };
     };

@@ -537,10 +537,9 @@ int main(int argc, char **argv)
                 EXPECT_OK(s2n_connection_set_test_master_secret(conn, &master_secret));
                 EXPECT_OK(s2n_connection_set_test_transcript_hash(conn, SERVER_FINISHED, &hash));
 
-                EXPECT_OK(s2n_derive_exporter_master_secret(conn));
+                EXPECT_OK(s2n_derive_exporter_master_secret(conn, &derived_secret));
                 EXPECT_EQUAL(derived_secret.size, secret.size);
-                EXPECT_BYTEARRAY_EQUAL(conn->secrets.version.tls13.exporter_master_secret,
-                        secret.data, secret.size);
+                EXPECT_BYTEARRAY_EQUAL(derived_secret.data, secret.data, secret.size);
             }
         };
     };
