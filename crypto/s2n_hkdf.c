@@ -257,10 +257,13 @@ int s2n_hkdf_expand_label(struct s2n_hmac_state *hmac, s2n_hmac_algorithm alg, c
     struct s2n_blob hkdf_label_blob = { 0 };
     struct s2n_stuffer hkdf_label = { 0 };
 
-    /* RFC8446 specifies that labels must be 12 characters or less, to avoid
-    ** incurring two hash rounds.
-    */
-    POSIX_ENSURE_LTE(label->size, 12);
+    // Label structure is `opaque label<7..255> = "tls13 " + Label` per RFC8446.
+    // So, we have 255-sizeof("tls13 ") = 249, the maximum label length.
+    //
+    // Note that all labels defined by RFC 8446 are <12 characters, which
+    // avoids an extra hash iteration. However, the exporter functionality
+    // (s2n_connection_tls_exporter) allows for longer labels.
+    POSIX_ENSURE_LTE(label->size, 249);
 
     POSIX_GUARD(s2n_blob_init(&hkdf_label_blob, hkdf_label_buf, sizeof(hkdf_label_buf)));
     POSIX_GUARD(s2n_stuffer_init(&hkdf_label, &hkdf_label_blob));
