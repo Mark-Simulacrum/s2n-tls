@@ -542,9 +542,9 @@ S2N_RESULT s2n_derive_exporter_master_secret(struct s2n_connection *conn, struct
 
     if (conn->secret_cb && (s2n_connection_is_quic_enabled(conn) || s2n_in_unit_test())) {
         RESULT_GUARD_POSIX(conn->secret_cb(conn->secret_cb_context, conn, S2N_EXPORTER_SECRET,
-                secret.data, secret.size));
+                secret->data, secret->size));
     }
-    s2n_result_ignore(s2n_key_log_tls13_secret(conn, &secret, S2N_EXPORTER_SECRET));
+    s2n_result_ignore(s2n_key_log_tls13_secret(conn, secret, S2N_EXPORTER_SECRET));
 
     return S2N_RESULT_OK;
 }
