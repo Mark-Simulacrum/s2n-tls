@@ -521,15 +521,15 @@ int main(int argc, char **argv)
             uint8_t output[32] = { 0 };
             int result = s2n_connection_tls_exporter(
                     conn,
-                    output,
-                    sizeof(output),
                     (uint8_t *) "label",
-                    sizeof("label"),
+                    sizeof("label") - 1,
                     (uint8_t *) "context",
-                    sizeof("context"));
+                    sizeof("context") - 1,
+                    output,
+                    sizeof(output));
             EXPECT_SUCCESS(result);
-            S2N_BLOB_FROM_HEX(expected, "57 93 3f 4a 3c 4c 7b b6 1c 84 51 02 \
-                    f5 87 30 28 f2 9e e6 38 06 38 2a a3 1d 6a d8 e3 36 87 cb 84");
+            S2N_BLOB_FROM_HEX(expected, "3a 72 eb 08 10 a3 69 f3 06 f2 77 11 70 ad d5 76 bd 21 15 \
+                    46 d4 c8 fb 80 1a 93 04 1e ac 59 aa 47");
             EXPECT_EQUAL(32, expected.size);
             EXPECT_BYTEARRAY_EQUAL(output, expected.data, expected.size);
         };
