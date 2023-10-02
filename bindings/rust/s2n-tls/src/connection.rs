@@ -810,6 +810,11 @@ impl Connection {
         })
     }
 
+    /// Provides access to the TLS-Exporter functionality.
+    ///
+    /// See https://datatracker.ietf.org/doc/html/rfc5705 and https://www.rfc-editor.org/rfc/rfc8446.
+    ///
+    /// This is currently only available with TLS 1.3 connections which have finished a handshake.
     pub fn tls_exporter(
         &self,
         label: &[u8],
