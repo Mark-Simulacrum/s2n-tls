@@ -809,6 +809,27 @@ impl Connection {
             hash_alg => Some(hash_alg.try_into()?),
         })
     }
+
+    pub fn tls_exporter(
+        &self,
+        label: &[u8],
+        context: &[u8],
+        output: &mut [u8],
+    ) -> Result<(), Error> {
+        unsafe {
+            s2n_connection_tls_exporter(
+                self.connection.as_ptr(),
+                output.as_mut_ptr(),
+                output.len().try_into().map_err(|_| Error::INVALID_INPUT)?,
+                label.as_ptr(),
+                label.len().try_into().map_err(|_| Error::INVALID_INPUT)?,
+                context.as_ptr(),
+                context.len().try_into().map_err(|_| Error::INVALID_INPUT)?,
+            )
+            .into_result()
+            .map(|_| ())
+        }
+    }
 }
 
 struct Context {
