@@ -539,6 +539,13 @@ S2N_RESULT s2n_derive_exporter_master_secret(struct s2n_connection *conn, struct
             &s2n_tls13_label_exporter_master_secret,
             SERVER_FINISHED,
             secret));
+
+    if (conn->secret_cb && (s2n_connection_is_quic_enabled(conn) || s2n_in_unit_test())) {
+        RESULT_GUARD_POSIX(conn->secret_cb(conn->secret_cb_context, conn, S2N_EXPORTER_SECRET,
+                secret.data, secret.size));
+    }
+    s2n_result_ignore(s2n_key_log_tls13_secret(conn, &secret, S2N_EXPORTER_SECRET));
+
     return S2N_RESULT_OK;
 }
 
@@ -660,12 +667,6 @@ S2N_RESULT s2n_tls13_secrets_update(struct s2n_connection *conn)
                     S2N_SERVER, &CONN_SECRET(conn, server_app_secret)));
             RESULT_GUARD(s2n_derive_exporter_master_secret(conn,
                     &CONN_SECRET(conn, exporter_master_secret)));
-
-            if (conn->secret_cb && (s2n_connection_is_quic_enabled(conn) || s2n_in_unit_test())) {
-                RESULT_GUARD_POSIX(conn->secret_cb(conn->secret_cb_context, conn, S2N_EXPORTER_SECRET,
-                        CONN_SECRET(conn, exporter_master_secret).data, CONN_SECRET(conn, exporter_master_secret).size));
-            }
-            s2n_result_ignore(s2n_key_log_tls13_secret(conn, &CONN_SECRET(conn, exporter_master_secret), S2N_EXPORTER_SECRET));
             return S2N_RESULT_OK;
             break;
         case CLIENT_FINISHED:
